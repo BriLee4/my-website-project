@@ -40,10 +40,74 @@
 <script>
 const apiKey = "68058e44ba2e519583b5264849ef3e14";
 const apiUrl = "https://api.openweathermap.org/data/2.5/weather?&units=imperial&q=";
-
+var location_api_key = 'f693c80dfaf04e4dab78c22c9422f375';
 const searchBox = document.querySelector(".search input")
 const searchBtn = document.querySelector(".search button")
 const weatherIcon = document.querySelector(".weather-icon");
+var location_api_url = 'https://api.opencagedata.com/geocode/v1/json'
+
+let geocode = {
+    reverseGeocode: function(latitude, longitude){
+
+  var query = latitude + ',' + longitude;
+
+  // forward geocoding example (address to coordinate)
+  // var query = 'Philipsbornstr. 2, 30165 Hannover, Germany';
+  // note: query needs to be URI encoded (see below)
+
+  var api_url = 'https://api.opencagedata.com/geocode/v1/json'
+
+  var request_url = location_api_url
+    + '?'
+    + 'key=' + location_api_key
+    + '&q=' + encodeURIComponent(query)
+    + '&pretty=1'
+    + '&no_annotations=1';
+
+  // see full list of required and optional parameters:
+  // https://opencagedata.com/api#forward
+
+  var request = new XMLHttpRequest();
+  request.open('GET', request_url, true);
+
+  request.onload = function() {
+    // see full list of possible response codes:
+    // https://opencagedata.com/api#codes
+
+    if (request.status === 200){
+      // Success!
+      var data = JSON.parse(request.responseText);
+      checkWeather(data.results[0].components.town); // print the location
+
+    } else if (request.status <= 500){
+      // We reached our target server, but it returned an error
+
+      console.log("unable to geocode! Response code: " + request.status);
+      var data = JSON.parse(request.responseText);
+      console.log('error msg: ' + data.status.message);
+    } else {
+      console.log("server error");
+    }
+  };
+
+  request.onerror = function() {
+    // There was a connection error of some sort
+    console.log("unable to connect to server");
+  };
+
+  request.send();  // make the request
+    },
+    getLocation: function(){
+        function success(data){
+            geocode.reverseGeocode(data.coords.latitude, data.coords.longitude)
+        }
+    if(navigator.geolocation)
+        navigator.geolocation.getCurrentPosition(success,console.error)
+    }
+};
+
+
+geocode.getLocation();
 
 async function checkWeather(city){
     const response = await fetch(apiUrl + city + `&appid=${apiKey}`)
@@ -72,6 +136,9 @@ async function checkWeather(city){
     }
     document.querySelector(".weather").style.display = "block";
 }
+searchBox.onload = ()=>{
+   checkWeather();
+}
 
 searchBtn.addEventListener("click" , ()=>{
     checkWeather(searchBox.value);
@@ -82,6 +149,7 @@ searchBox.addEventListener('keydown' , (event)=>{
     }
     
 })
+
 
 
 </script>
